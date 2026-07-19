@@ -1,0 +1,47 @@
+name: Sync from mattpocock/skills
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: sync-upstream
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge upstream (skills track upstream; README + marketplace.json stay local)
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/mattpocock/skills.git
+          git fetch upstream main
+          if [ "$(git rev-list HEAD..upstream/main --count)" = "0" ]; then
+            echo "Already up to date with upstream."
+            exit 0
+          fi
+          # Conflicted hunks resolve in upstream's favour; everything here tracks Matt
+          git merge upstream/main -X theirs --no-commit --no-edit || true
+          # ...except the two files this fork owns
+          git checkout HEAD -- README.md .claude-plugin/marketplace.json
+          # Mop up any conflict shape -X theirs can't auto-resolve (e.g. modify/delete)
+          git diff --name-only --diff-filter=U | while read -r f; do
+            if git cat-file -e "upstream/main:$f" 2>/dev/null; then
+              git checkout upstream/main -- "$f"
+            else
+              git rm -q -f "$f"
+            fi
+          done
+          python3 scripts/update-readme-skills.py || echo "::warning::README skills table regen failed"
+          git add -A
+          git commit -m "chore: sync skills from mattpocock/skills"
+          git push origin HEAD
