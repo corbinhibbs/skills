@@ -152,3 +152,9 @@ skills/                                 (GitHub: corbinhibbs/skills — fork of 
 Every skill here is [Matt Pocock](https://www.aihero.dev)'s work, MIT-licensed —
 see [LICENSE](LICENSE). If you like the skills,
 [join his newsletter](https://www.aihero.dev/s/skills-newsletter).
+
+---
+
+## Contributing
+
+Changes go through pull requests against `main`. Keep the existing skill format: each skill lives in its own folder under `skills/<bucket>/` with a `SKILL.md`.
